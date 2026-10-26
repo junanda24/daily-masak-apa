@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>MasakApa — Bingung masak apa hari ini? Beres.</title>
+    <style>
+      :root {
+        --bg: #faf1e2;
+        --surface: #fffaf1;
+        --surface-2: #f5e7cf;
+        --ink: #2e2a25;
+        --ink-soft: #6d6154;
+        --accent: #bc4526;
+        --accent-dark: #9a3418;
+        --accent-soft: #f7ddd0;
+        --line: #e6d3b4;
+        --good: #4d7c2a;
+        --good-bg: #e7efdb;
+        --warn-bg: #fbeed3;
+        --warn-ink: #8a6414;
+        --shadow: 0 2px 10px rgba(120, 72, 30, 0.10);
+        --shadow-lift: 0 10px 24px rgba(120, 72, 30, 0.18);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #211912;
+          --surface: #2d2115;
+          --surface-2: #3a2b1b;
+          --ink: #f3e8d7;
+          --ink-soft: #c4b199;
+          --accent: #e0683f;
+          --accent-dark: #eda27f;
+          --accent-soft: #52301f;
+          --line: #4c3823;
+          --good: #a9c97e;
+          --good-bg: #37451f;
+          --warn-bg: #4d3d17;
+          --warn-ink: #ecc97e;
+          --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+          --shadow-lift: 0 10px 24px rgba(0, 0, 0, 0.5);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 56px; }
+      h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif; }
+      h1 { font-size: 2.5rem; margin: 0; letter-spacing: -0.01em; }
+      h2 { font-size: 1.35rem; margin: 0 0 6px; }
+      p { margin: 0; }
+
+      header.site { padding: 14px 0 6px; }
+      .tagline { font-size: 1.12rem; color: var(--accent); font-family: Georgia, serif; font-style: italic; margin-top: 2px; }
+      .intro { color: var(--ink-soft); margin-top: 10px; max-width: 56ch; }
+
+      section { margin-top: 34px; }
+      .section-sub { color: var(--ink-soft); font-size: 0.94rem; margin-bottom: 12px; }
+
+      /* --- Acak Menu --- */
+      .acak-box {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 22px 18px;
+        text-align: center;
+        box-shadow: var(--shadow);
+      }
+      .acak-result {
+        min-height: 64px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        margin-bottom: 16px;
+      }
+      .acak-name { font-family: Georgia, serif; font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
+      .acak-name.idle { color: var(--ink-soft); font-size: 1.15rem; font-weight: 400; font-style: italic; }
+      .acak-meta { color: var(--ink-soft); font-size: 0.92rem; }
+      @keyframes pop {
+        0% { transform: scale(0.82); }
+        55% { transform: scale(1.09); }
+        100% { transform: scale(1); }
+      }
+      .pop { animation: pop 0.38s ease-out; }
+      .btn {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 14px 26px;
+        min-height: 54px;
+        transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+      }
+      .btn:active { transform: scale(0.97); }
+      .btn-primary { background: var(--accent); color: #fff; font-size: 1.12rem; box-shadow: var(--shadow); width: 100%; }
+      .btn-primary:hover { background: var(--accent-dark); }
+      .btn-primary:disabled { opacity: 0.65; cursor: wait; }
+      .btn-ghost { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); font-size: 0.95rem; min-height: 48px; padding: 10px 20px; }
+      .btn-ghost:hover { border-color: var(--accent); color: var(--accent-dark); }
+      .btn-small { min-height: 44px; padding: 8px 18px; font-size: 0.92rem; }
+      .acak-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+      .acak-actions[hidden] { display: none; }
+
+      /* --- Chips --- */
+      .chips { display: flex; flex-wrap: wrap; gap: 9px; }
+      .chip {
+        appearance: none;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 600;
+        font-size: 0.98rem;
+        padding: 11px 18px;
+        min-height: 48px;
+        border-radius: 999px;
+        border: 1.5px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+      }
+      .chip:active { transform: scale(0.95); }
+      .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .chips-note { margin-top: 10px; font-size: 0.9rem; color: var(--ink-soft); min-height: 1.3em; }
+
+      /* --- Mode pills + search --- */
+      .modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+      .mode {
+        appearance: none; cursor: pointer; font: inherit; font-weight: 600; font-size: 0.95rem;
+        padding: 9px 18px; min-height: 44px; border-radius: 999px;
+        border: 1.5px solid var(--line); background: transparent; color: var(--ink-soft);
+        transition: all 0.15s ease;
+      }
+      .mode[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+      .search {
+        width: 100%;
+        font: inherit;
+        font-size: 1rem;
+        padding: 13px 16px;
+        border-radius: 12px;
+        border: 1.5px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .search:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+      .count-line { margin: 14px 0 4px; color: var(--ink-soft); font-size: 0.92rem; }
+
+      /* --- Cards --- */
+      .cards { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .card:active { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+      @media (hover: hover) {
+        .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+        .chip:hover { border-color: var(--accent); }
+      }
+      .card h3 { margin: 0 0 4px; font-size: 1.28rem; line-height: 1.25; }
+      .meta { color: var(--ink-soft); font-size: 0.94rem; }
+      .meta b { color: var(--ink); font-weight: 600; }
+      .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+      .badge {
+        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.01em;
+        padding: 4px 10px; border-radius: 999px;
+        background: var(--surface-2); color: var(--ink-soft);
+      }
+      .badge.hot { background: var(--accent-soft); color: var(--accent-dark); }
+      .badge.good { background: var(--good-bg); color: var(--good); }
+      .badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+      .card .btn { margin-top: 14px; }
+      .recipe { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px; }
+      .recipe[hidden] { display: none; }
+      .recipe h4 { margin: 0 0 8px; font-size: 1rem; font-family: Georgia, serif; }
+      .recipe ul, .recipe ol { margin: 0 0 14px; padding-left: 22px; }
+      .recipe li { margin-bottom: 5px; }
+      .recipe li::marker { color: var(--accent); font-weight: 700; }
+      .empty {
+        text-align: center; padding: 34px 18px; color: var(--ink-soft);
+        border: 1.5px dashed var(--line); border-radius: 16px; background: var(--surface);
+      }
+      .empty .serif { font-size: 1.15rem; color: var(--ink); display: block; margin-bottom: 4px; }
+
+      /* --- Rencana --- */
+      .plan-box { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px; box-shadow: var(--shadow); }
+      .plan-days { display: flex; flex-direction: column; margin-top: 6px; }
+      .plan-day {
+        display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+        padding: 11px 2px; border-bottom: 1px solid var(--line);
+      }
+      .plan-day:last-child { border-bottom: 0; }
+      .plan-day .day { font-weight: 700; font-family: Georgia, serif; min-width: 74px; }
+      .plan-day .dish { flex: 1; display: flex; flex-direction: column; gap: 1px; align-items: flex-start; }
+      .plan-day .mins { color: var(--ink-soft); font-size: 0.88rem; }
+      .plan-day .dish button {
+        appearance: none; background: none; border: 0; padding: 0; font: inherit; color: inherit;
+        cursor: pointer; text-align: left; text-decoration: underline dotted var(--accent) 1.5px; text-underline-offset: 3px;
+      }
+      .shop { margin-top: 18px; }
+      .shop h3 { font-size: 1.08rem; margin: 16px 0 6px; }
+      .shop h3:first-child { margin-top: 0; }
+      .shop ul { margin: 0; padding-left: 20px; columns: 2; column-gap: 26px; }
+      .shop li { margin-bottom: 4px; break-inside: avoid; text-transform: capitalize; }
+      @media (max-width: 480px) { .shop ul { columns: 1; } }
+      .plan-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+      .copy-note { font-size: 0.9rem; color: var(--good); font-weight: 600; min-height: 1.3em; margin-top: 10px; }
+
+      footer.note {
+        margin-top: 40px; padding: 16px 18px;
+        border: 1px solid var(--line); border-radius: 14px;
+        background: var(--surface-2); color: var(--ink-soft); font-size: 0.93rem;
+      }
+      footer.note b { color: var(--ink); }
+      .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .pop { animation: none; }
+        .card, .chip, .btn { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="site">
+        <h1>MasakApa</h1>
+        <p class="tagline">Bingung masak apa hari ini? Beres.</p>
+        <p class="intro">Lihat isi dapurmu, pilih bahan yang ada, lalu pilih menunya. Bisa diacak kalau lagi malas mikir, atau disusun sekalian buat seminggu.</p>
+      </header>
+
+      <section aria-label="Acak menu">
+        <div class="acak-box">
+          <div class="acak-result" aria-live="polite">
+            <div class="acak-name idle" id="acakName">Belum ada pilihan. Tekan tombolnya, biar kami yang mikir.</div>
+            <div class="acak-meta" id="acakMeta"></div>
+          </div>
+          <button class="btn btn-primary" id="acakBtn" type="button">Acak Menu</button>
+          <div class="acak-actions" id="acakActions" hidden>
+            <button class="btn btn-ghost btn-small" id="acakRecipeBtn" type="button">Lihat Resep</button>
+            <button class="btn btn-ghost btn-small" id="acakAgainBtn" type="button">Acak Lagi</button>
+          </div>
+          <div class="recipe" id="acakRecipe" hidden></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="bahan-title">
+        <h2 id="bahan-title">Bahan yang ada di dapur</h2>
+        <p class="section-sub">Ketuk bahan yang kamu punya. Daftar menu di bawah langsung mengurutkan yang paling bisa dimasak duluan.</p>
+        <div class="chips" id="chips"></div>
+        <p class="chips-note" id="chipsNote"></p>
+      </section>
+
+      <section aria-labelledby="menu-title">
+        <h2 id="menu-title">Pilih menu</h2>
+        <p class="section-sub">Saring cepat pakai mode di bawah, atau cari nama masakannya langsung.</p>
+        <div class="modes" id="modes" role="group" aria-label="Mode tampilan menu">
+          <button class="mode" type="button" data-mode="semua" aria-pressed="true">Semua</button>
+          <button class="mode" type="button" data-mode="cepat" aria-pressed="false">Cepat</button>
+          <button class="mode" type="button" data-mode="hemat" aria-pressed="false">Hemat</button>
+          <button class="mode" type="button" data-mode="spesial" aria-pressed="false">Spesial</button>
+        </div>
+        <input class="search" id="search" type="search" placeholder="Cari menu, misalnya: soto, rendang, tumis..." aria-label="Cari menu berdasarkan nama" />
+        <p class="count-line" id="countLine"></p>
+        <div class="cards" id="cards"></div>
+        <div class="empty" id="emptyState" hidden>
+          <span class="serif">Tidak ada menu yang cocok.</span>
+          Coba kurangi bahan yang dipilih, ganti modenya, atau pakai kata pencarian lain.
+        </div>
+      </section>
+
+      <section aria-labelledby="rencana-title">
+        <h2 id="rencana-title">Rencana seminggu</h2>
+        <p class="section-sub">Satu tombol, tujuh menu berbeda untuk Senin sampai Minggu, lengkap dengan daftar belanjanya. Rencana tersimpan di perangkat ini, jadi tidak hilang walau halamannya ditutup.</p>
+        <div class="plan-box">
+          <div id="planEmpty">
+            <p style="color: var(--ink-soft); margin-bottom: 14px;">Belum ada rencana. Buat sekarang, belanja sekali, masak tenang seminggu.</p>
+            <button class="btn btn-primary" id="makePlanBtn" type="button">Buat Rencana Seminggu</button>
+          </div>
+          <div id="planView" hidden>
+            <div class="plan-days" id="planDays"></div>
+            <div class="shop" id="planShop"></div>
+            <div class="plan-actions">
+              <button class="btn btn-ghost btn-small" id="copyBtn" type="button">Salin Daftar</button>
+              <button class="btn btn-ghost btn-small" id="replanBtn" type="button">Acak Lagi</button>
+              <button class="btn btn-ghost btn-small" id="clearPlanBtn" type="button">Hapus Rencana</button>
+            </div>
+            <p class="copy-note" id="copyNote" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="note">
+        <b>Soal harga:</b> perkiraan biaya per porsi di halaman ini hanya taksiran kasar dari harga bahan pada umumnya. Harga di pasar dan warung bisa berbeda, naik-turun tergantung daerah dan musim. Anggap saja sebagai patokan awal, bukan angka pasti.
+      </footer>
+    </div>
+
+    <script>
+      "use strict";
+
+      var ING_LABELS = {
+        ayam: "Ayam", telur: "Telur", tempe: "Tempe", tahu: "Tahu", mie: "Mie",
+        ikan: "Ikan", daging: "Daging Sapi", udang: "Udang", sayur: "Sayur",
+        kentang: "Kentang", sosis: "Sosis", jamur: "Jamur", kornet: "Kornet"
+      };
+      var ING_ORDER = ["ayam", "telur", "tempe", "tahu", "mie", "ikan", "daging", "udang", "sayur", "kentang", "sosis", "jamur", "kornet"];
+      var CATS = { P: "Protein", S: "Sayur & Buah", B: "Bumbu & Dapur" };
+      var DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+
+      /* ing: [takaran, nama bahan, kategori P/S/B] — nama dipakai juga untuk daftar belanja */
+      var DISHES = [
+        { id: 1, name: "Nasi Goreng Kampung", min: 20, cost: 12000, spice: "Sedang", mains: ["telur"],
+          ing: [["2 piring", "nasi putih dingin", "B"], ["2 butir", "telur", "P"], ["5 butir", "bawang merah", "B"], ["3 siung", "bawang putih", "B"], ["3 buah", "cabai rawit", "B"], ["1 sdm", "kecap manis", "B"], ["secukupnya", "garam", "B"], ["2 sdm", "minyak goreng", "B"]],
+          steps: ["Haluskan bawang merah, bawang putih, dan cabai rawit.", "Panaskan minyak, tumis bumbu halus sampai harum.", "Masukkan telur, buat orak-arik sampai matang.", "Masukkan nasi, aduk rata dengan api besar.", "Tambahkan kecap manis dan garam, aduk sampai nasi agak kering.", "Koreksi rasa, angkat, sajikan hangat."] },
+        { id: 2, name: "Mie Goreng Jawa", min: 15, cost: 10000, spice: "Sedang", mains: ["mie", "telur", "sayur"],
+          ing: [["200 g", "mie telur kering", "B"], ["2 butir", "telur", "P"], ["100 g", "kol", "S"], ["1 buah", "wortel", "S"], ["2 batang", "daun bawang", "S"], ["3 siung", "bawang putih", "B"], ["3 sdm", "kecap manis", "B"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Rebus mie sampai setengah matang, tiriskan.", "Tumis bawang putih cincang sampai harum.", "Masukkan telur, orak-arik, lalu masukkan wortel dan kol.", "Masukkan mie, kecap manis, garam, dan merica.", "Aduk sampai bumbu meresap, taburi daun bawang, sajikan."] },
+        { id: 3, name: "Telur Balado", min: 25, cost: 8000, spice: "Pedas", mains: ["telur"],
+          ing: [["6 butir", "telur", "P"], ["8 buah", "cabai merah keriting", "B"], ["5 butir", "bawang merah", "B"], ["2 siung", "bawang putih", "B"], ["1 buah", "tomat", "S"], ["secukupnya", "garam dan gula", "B"], ["3 sdm", "minyak goreng", "B"]],
+          steps: ["Rebus telur sampai matang, kupas, goreng sebentar sampai berkulit.", "Haluskan cabai, bawang merah, bawang putih, dan tomat.", "Tumis bumbu halus sampai matang dan keluar minyak.", "Masukkan telur, aduk sampai terbalut bumbu.", "Masak sebentar sampai bumbu meresap, sajikan."] },
+        { id: 4, name: "Tempe Orek", min: 20, cost: 7000, spice: "Ringan", mains: ["tempe"],
+          ing: [["1 papan", "tempe", "P"], ["4 butir", "bawang merah", "B"], ["3 siung", "bawang putih", "B"], ["2 buah", "cabai merah", "B"], ["3 sdm", "kecap manis", "B"], ["1 sdm", "gula merah", "B"], ["secukupnya", "garam", "B"]],
+          steps: ["Potong tempe seperti korek api, goreng sampai kering, tiriskan.", "Tumis irisan bawang dan cabai sampai harum.", "Masukkan kecap manis, gula merah, garam, dan sedikit air.", "Masukkan tempe goreng, aduk sampai bumbu meresap dan kering.", "Angkat, sajikan dengan nasi hangat."] },
+        { id: 5, name: "Tahu Gejrot", min: 10, cost: 6000, spice: "Sedang", mains: ["tahu"],
+          ing: [["10 buah", "tahu pong", "P"], ["5 butir", "bawang merah", "B"], ["5 buah", "cabai rawit", "B"], ["2 sdm", "gula merah", "B"], ["1 sdm", "asam jawa", "B"], ["200 ml", "air", "B"], ["secukupnya", "garam", "B"]],
+          steps: ["Larutkan gula merah dan asam jawa dengan air panas, saring.", "Ulek kasar bawang merah, cabai rawit, dan garam.", "Potong tahu pong jadi dua bagian.", "Tata tahu di piring, siram kuah asam gula merah.", "Taburi ulekan bawang dan cabai di atasnya, sajikan."] },
+        { id: 6, name: "Sayur Asem", min: 30, cost: 8000, spice: "Tidak pedas", mains: ["sayur"],
+          ing: [["100 g", "kacang panjang", "S"], ["1 buah", "labu siam", "S"], ["1 buah", "jagung manis", "S"], ["50 g", "melinjo dan daun melinjo", "S"], ["2 sdm", "asam jawa", "B"], ["2 lembar", "daun salam", "B"], ["1 ruas", "lengkuas", "B"], ["1 liter", "air", "B"], ["secukupnya", "gula dan garam", "B"]],
+          steps: ["Rebus air bersama daun salam dan lengkuas geprek.", "Masukkan jagung dan melinjo, masak sampai mulai empuk.", "Masukkan labu siam dan kacang panjang.", "Tambahkan air asam jawa, gula, dan garam.", "Masak sampai semua sayur matang, koreksi rasa, sajikan."] },
+        { id: 7, name: "Ayam Goreng Bumbu Kuning", min: 40, cost: 15000, spice: "Tidak pedas", mains: ["ayam"],
+          ing: [["500 g", "ayam potong", "P"], ["6 butir", "bawang merah", "B"], ["4 siung", "bawang putih", "B"], ["2 ruas", "kunyit", "B"], ["1 sdt", "ketumbar", "B"], ["2 lembar", "daun salam", "B"], ["1 batang", "serai", "B"], ["secukupnya", "garam", "B"]],
+          steps: ["Haluskan bawang merah, bawang putih, kunyit, dan ketumbar.", "Ungkep ayam dengan bumbu halus, daun salam, serai, dan sedikit air.", "Masak sampai ayam empuk dan air menyusut.", "Goreng ayam sampai kuning kecokelatan.", "Sajikan dengan sambal dan lalapan."] },
+        { id: 8, name: "Soto Ayam", min: 45, cost: 15000, spice: "Ringan", mains: ["ayam"],
+          ing: [["500 g", "ayam", "P"], ["2 liter", "air", "B"], ["6 butir", "bawang merah", "B"], ["4 siung", "bawang putih", "B"], ["2 ruas", "kunyit", "B"], ["1 batang", "serai", "B"], ["2 lembar", "daun jeruk", "B"], ["100 g", "soun", "B"], ["100 g", "tauge", "S"], ["2 butir", "telur rebus", "P"]],
+          steps: ["Rebus ayam sampai empuk, angkat, suwir dagingnya, simpan kaldunya.", "Haluskan bawang dan kunyit, tumis bersama serai dan daun jeruk.", "Masukkan tumisan ke dalam kaldu, bumbui garam dan merica, didihkan.", "Tata soun, tauge, suwiran ayam, dan telur di mangkuk.", "Siram kuah panas, sajikan."] },
+        { id: 9, name: "Rendang Sapi", min: 120, cost: 35000, spice: "Sedang", mains: ["daging"],
+          ing: [["500 g", "daging sapi", "P"], ["500 ml", "santan kental", "B"], ["8 buah", "cabai merah keriting", "B"], ["8 butir", "bawang merah", "B"], ["4 siung", "bawang putih", "B"], ["1 ruas", "jahe", "B"], ["1 ruas", "lengkuas", "B"], ["2 batang", "serai", "B"], ["3 lembar", "daun jeruk", "B"], ["1 lembar", "daun kunyit", "B"]],
+          steps: ["Haluskan cabai, bawang merah, bawang putih, jahe, dan lengkuas.", "Tumis bumbu halus bersama serai, daun jeruk, dan daun kunyit sampai harum.", "Masukkan daging, aduk sampai berubah warna.", "Tuang santan, masak dengan api kecil sambil sesekali diaduk.", "Masak sekitar 2 jam sampai santan menyusut, berminyak, dan daging empuk.", "Angkat saat warna rendang sudah gelap, sajikan."] },
+        { id: 10, name: "Gado-Gado", min: 30, cost: 12000, spice: "Ringan", mains: ["telur", "tempe", "tahu", "sayur", "kentang"],
+          ing: [["2 buah", "kentang", "S"], ["2 butir", "telur", "P"], ["100 g", "tempe", "P"], ["100 g", "tahu", "P"], ["100 g", "kacang panjang", "S"], ["100 g", "tauge", "S"], ["100 g", "kol", "S"], ["150 g", "kacang tanah goreng", "B"], ["2 sdm", "gula merah", "B"], ["2 buah", "cabai merah", "B"], ["secukupnya", "garam", "B"], ["secukupnya", "kerupuk", "B"]],
+          steps: ["Rebus kentang, telur, dan semua sayuran, tiriskan.", "Goreng tempe dan tahu sampai matang.", "Haluskan kacang tanah, cabai, gula merah, dan garam, larutkan dengan air hangat.", "Tata sayuran, kentang, tempe, tahu, dan telur di piring.", "Siram bumbu kacang, beri kerupuk, sajikan."] },
+        { id: 11, name: "Pecel Sayur", min: 25, cost: 9000, spice: "Sedang", mains: ["sayur"],
+          ing: [["100 g", "bayam", "S"], ["100 g", "kacang panjang", "S"], ["100 g", "tauge", "S"], ["100 g", "kol", "S"], ["150 g", "kacang tanah goreng", "B"], ["3 buah", "cabai merah", "B"], ["1 ruas", "kencur", "B"], ["2 sdm", "gula merah", "B"], ["1 sdm", "asam jawa", "B"], ["secukupnya", "garam", "B"]],
+          steps: ["Rebus semua sayuran bergantian sampai matang, tiriskan.", "Haluskan kacang tanah, cabai, kencur, gula merah, dan garam.", "Larutkan bumbu dengan air hangat dan air asam jawa.", "Tata sayuran di piring.", "Siram bumbu pecel, sajikan."] },
+        { id: 12, name: "Capcay Kuah", min: 25, cost: 12000, spice: "Tidak pedas", mains: ["sayur"],
+          ing: [["1 buah", "wortel", "S"], ["100 g", "kembang kol", "S"], ["100 g", "sawi hijau", "S"], ["50 g", "kapri", "S"], ["3 siung", "bawang putih", "B"], ["1 sdm", "saus tiram", "B"], ["1 sdt", "tepung maizena", "B"], ["300 ml", "air kaldu", "B"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Tumis bawang putih cincang sampai harum.", "Masukkan wortel dan kembang kol, tuang air kaldu.", "Masak sampai sayur setengah empuk.", "Masukkan sawi, kapri, saus tiram, garam, dan merica.", "Kentalkan dengan larutan maizena, masak sebentar, sajikan."] },
+        { id: 13, name: "Tumis Kangkung", min: 10, cost: 6000, spice: "Ringan", mains: ["sayur"],
+          ing: [["2 ikat", "kangkung", "S"], ["3 siung", "bawang putih", "B"], ["4 butir", "bawang merah", "B"], ["2 buah", "cabai merah", "B"], ["1 sdm", "saus tiram", "B"], ["secukupnya", "garam dan gula", "B"]],
+          steps: ["Petik kangkung, cuci bersih, tiriskan.", "Tumis irisan bawang dan cabai sampai harum.", "Masukkan kangkung dengan api besar.", "Tambahkan saus tiram, garam, dan gula.", "Aduk cepat sampai layu, langsung angkat dan sajikan."] },
+        { id: 14, name: "Oseng Daging Mercon", min: 30, cost: 25000, spice: "Pedas", mains: ["daging"],
+          ing: [["300 g", "daging sapi", "P"], ["15 buah", "cabai rawit", "B"], ["5 buah", "cabai merah", "B"], ["6 butir", "bawang merah", "B"], ["3 siung", "bawang putih", "B"], ["1 buah", "tomat", "S"], ["2 lembar", "daun jeruk", "B"], ["secukupnya", "gula dan garam", "B"]],
+          steps: ["Rebus daging sampai empuk, potong kecil-kecil, simpan sedikit kaldunya.", "Ulek kasar cabai rawit, cabai merah, bawang, dan tomat.", "Tumis bumbu bersama daun jeruk sampai matang.", "Masukkan daging dan sedikit kaldu rebusan.", "Masak sampai bumbu meresap dan kuah menyusut, sajikan."] },
+        { id: 15, name: "Ikan Goreng Sambal", min: 25, cost: 15000, spice: "Sedang", mains: ["ikan"],
+          ing: [["500 g", "ikan kembung", "P"], ["1 buah", "jeruk nipis", "S"], ["8 buah", "cabai merah keriting", "B"], ["5 butir", "bawang merah", "B"], ["2 siung", "bawang putih", "B"], ["1 buah", "tomat", "S"], ["secukupnya", "garam dan gula", "B"]],
+          steps: ["Lumuri ikan dengan air jeruk nipis dan garam, diamkan 10 menit.", "Goreng ikan sampai matang dan garing, tiriskan.", "Haluskan cabai, bawang merah, bawang putih, dan tomat.", "Tumis sambal sampai matang, bumbui garam dan gula.", "Siram sambal di atas ikan atau sajikan terpisah."] },
+        { id: 16, name: "Ikan Bakar Kecap", min: 30, cost: 18000, spice: "Ringan", mains: ["ikan"],
+          ing: [["500 g", "ikan nila", "P"], ["5 sdm", "kecap manis", "B"], ["3 siung", "bawang putih", "B"], ["1 sdt", "ketumbar", "B"], ["1 buah", "jeruk nipis", "S"], ["1 sdm", "margarin", "B"], ["5 buah", "cabai rawit", "B"], ["secukupnya", "garam", "B"]],
+          steps: ["Lumuri ikan dengan air jeruk nipis dan garam.", "Haluskan bawang putih dan ketumbar, campur dengan kecap manis dan margarin leleh.", "Olesi ikan dengan bumbu, diamkan 15 menit.", "Bakar di atas bara atau teflon sambil dioles sisa bumbu sampai matang.", "Sajikan dengan sambal kecap dari cabai rawit iris dan kecap manis."] },
+        { id: 17, name: "Udang Saus Tiram", min: 20, cost: 25000, spice: "Ringan", mains: ["udang"],
+          ing: [["300 g", "udang", "P"], ["3 siung", "bawang putih", "B"], ["1/2 buah", "bawang bombay", "S"], ["2 sdm", "saus tiram", "B"], ["1 sdm", "kecap manis", "B"], ["1 batang", "daun bawang", "S"], ["secukupnya", "merica dan gula", "B"]],
+          steps: ["Bersihkan udang, buang kotoran di punggungnya.", "Tumis bawang putih dan bawang bombay sampai harum.", "Masukkan udang, masak sampai berubah warna.", "Tambahkan saus tiram, kecap manis, merica, gula, dan sedikit air.", "Masak sebentar sampai bumbu meresap, taburi daun bawang."] },
+        { id: 18, name: "Sup Ayam", min: 35, cost: 12000, spice: "Tidak pedas", mains: ["ayam", "sayur"],
+          ing: [["300 g", "ayam", "P"], ["2 buah", "wortel", "S"], ["2 buah", "kentang", "S"], ["100 g", "buncis", "S"], ["3 siung", "bawang putih", "B"], ["1 batang", "daun bawang dan seledri", "S"], ["1,5 liter", "air", "B"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Rebus ayam sampai empuk, buang buih yang muncul.", "Masukkan kentang dan wortel, masak sampai setengah empuk.", "Tambahkan bawang putih halus, garam, dan merica.", "Masukkan buncis, masak sampai semua sayur empuk.", "Taburi daun bawang dan seledri, sajikan hangat."] },
+        { id: 19, name: "Rawon", min: 90, cost: 25000, spice: "Ringan", mains: ["daging"],
+          ing: [["500 g", "daging sapi", "P"], ["4 buah", "kluwek", "B"], ["6 butir", "bawang merah", "B"], ["4 siung", "bawang putih", "B"], ["1 ruas", "kunyit", "B"], ["1 batang", "serai", "B"], ["3 lembar", "daun jeruk", "B"], ["100 g", "tauge pendek", "S"], ["secukupnya", "garam", "B"]],
+          steps: ["Rebus daging sampai empuk, potong dadu, simpan kaldunya.", "Rendam kluwek dengan air panas, ambil isinya, haluskan bersama bawang dan kunyit.", "Tumis bumbu halus bersama serai dan daun jeruk sampai harum.", "Masukkan tumisan dan daging ke dalam kaldu.", "Masak sampai kuah pekat dan bumbu meresap, sajikan dengan tauge pendek."] },
+        { id: 20, name: "Semur Ayam", min: 40, cost: 15000, spice: "Tidak pedas", mains: ["ayam", "kentang"],
+          ing: [["500 g", "ayam potong", "P"], ["2 buah", "kentang", "S"], ["6 sdm", "kecap manis", "B"], ["5 butir", "bawang merah", "B"], ["3 siung", "bawang putih", "B"], ["1/2 sdt", "pala bubuk", "B"], ["1 buah", "tomat", "S"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Tumis irisan bawang merah dan bawang putih sampai harum.", "Masukkan ayam, aduk sampai berubah warna.", "Tambahkan kecap manis, pala, garam, merica, dan air secukupnya.", "Masukkan kentang yang sudah dipotong-potong.", "Masak dengan api kecil sampai ayam empuk dan kuah mengental, masukkan tomat menjelang diangkat."] },
+        { id: 21, name: "Ayam Geprek", min: 25, cost: 15000, spice: "Pedas", mains: ["ayam"],
+          ing: [["300 g", "dada ayam fillet", "P"], ["100 g", "tepung terigu", "B"], ["1 butir", "telur", "P"], ["10 buah", "cabai rawit", "B"], ["2 siung", "bawang putih", "B"], ["secukupnya", "garam", "B"], ["secukupnya", "minyak goreng", "B"]],
+          steps: ["Lumuri ayam dengan garam dan merica, balur tepung, celup telur kocok, balur tepung lagi.", "Goreng ayam sampai garing dan keemasan, tiriskan.", "Ulek cabai rawit, bawang putih, dan garam.", "Siram sambal dengan sedikit minyak panas bekas menggoreng.", "Letakkan ayam di atas sambal, geprek sampai agak pipih, sajikan."] },
+        { id: 22, name: "Mie Kuah Telur", min: 10, cost: 8000, spice: "Ringan", mains: ["mie", "telur", "sayur"],
+          ing: [["100 g", "mie telur kering", "B"], ["1 butir", "telur", "P"], ["50 g", "sawi hijau", "S"], ["2 siung", "bawang putih", "B"], ["1 batang", "daun bawang", "S"], ["500 ml", "air", "B"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Tumis bawang putih cincang sampai harum.", "Tuang air, masak sampai mendidih.", "Masukkan mie dan sawi, masak sampai mie matang.", "Kocok lepas telur, tuang perlahan sambil diaduk sampai berserabut.", "Bumbui garam dan merica, taburi daun bawang, sajikan panas."] },
+        { id: 23, name: "Bubur Ayam", min: 50, cost: 12000, spice: "Tidak pedas", mains: ["ayam"],
+          ing: [["200 g", "beras", "B"], ["250 g", "ayam", "P"], ["2 lembar", "daun salam", "B"], ["1 batang", "serai", "B"], ["2 buah", "cakwe", "B"], ["1 batang", "daun bawang dan seledri", "S"], ["2 sdm", "kacang kedelai goreng", "B"], ["secukupnya", "kerupuk", "B"], ["secukupnya", "garam", "B"]],
+          steps: ["Rebus ayam bersama daun salam dan serai sampai empuk, angkat, suwir dagingnya, simpan kaldunya.", "Masak beras dengan kaldu ayam sambil terus diaduk.", "Aduk sampai beras hancur menjadi bubur kental, bumbui garam.", "Tuang bubur ke mangkuk.", "Taburi ayam suwir, cakwe iris, daun bawang, kacang kedelai, dan kerupuk."] },
+        { id: 24, name: "Perkedel Kentang", min: 30, cost: 8000, spice: "Tidak pedas", mains: ["kentang", "telur"],
+          ing: [["500 g", "kentang", "S"], ["1 butir", "telur", "P"], ["2 siung", "bawang putih goreng", "B"], ["1 batang", "seledri", "S"], ["secukupnya", "garam dan merica", "B"], ["secukupnya", "minyak goreng", "B"]],
+          steps: ["Goreng kentang sampai empuk, haluskan selagi panas.", "Campur kentang dengan bawang putih halus, seledri cincang, garam, dan merica.", "Bentuk bulat pipih sampai adonan habis.", "Celupkan ke telur kocok.", "Goreng sampai kuning keemasan, tiriskan."] },
+        { id: 25, name: "Sambal Goreng Kentang", min: 30, cost: 10000, spice: "Sedang", mains: ["kentang"],
+          ing: [["400 g", "kentang", "S"], ["6 buah", "cabai merah keriting", "B"], ["5 butir", "bawang merah", "B"], ["2 siung", "bawang putih", "B"], ["1 lembar", "daun salam", "B"], ["1 ruas", "lengkuas", "B"], ["100 ml", "santan", "B"], ["secukupnya", "gula dan garam", "B"]],
+          steps: ["Potong kentang bentuk dadu, goreng sampai matang, tiriskan.", "Haluskan cabai, bawang merah, dan bawang putih.", "Tumis bumbu halus bersama daun salam dan lengkuas sampai harum.", "Tuang santan, masak sampai mendidih.", "Masukkan kentang goreng, aduk sampai bumbu meresap."] },
+        { id: 26, name: "Tumis Buncis Telur", min: 15, cost: 8000, spice: "Tidak pedas", mains: ["sayur", "telur"],
+          ing: [["200 g", "buncis", "S"], ["2 butir", "telur", "P"], ["3 siung", "bawang putih", "B"], ["2 buah", "cabai merah", "B"], ["1 sdm", "saus tiram", "B"], ["secukupnya", "garam dan gula", "B"]],
+          steps: ["Potong buncis menyerong, cuci bersih.", "Tumis bawang putih dan cabai sampai harum.", "Masukkan telur, buat orak-arik.", "Masukkan buncis dan sedikit air.", "Bumbui saus tiram, garam, dan gula, masak sampai buncis matang tapi masih renyah."] },
+        { id: 27, name: "Ayam Rica-Rica", min: 40, cost: 18000, spice: "Pedas", mains: ["ayam"],
+          ing: [["500 g", "ayam potong", "P"], ["10 buah", "cabai merah keriting", "B"], ["8 buah", "cabai rawit", "B"], ["6 butir", "bawang merah", "B"], ["3 siung", "bawang putih", "B"], ["1 ruas", "jahe", "B"], ["1 batang", "serai", "B"], ["3 lembar", "daun jeruk", "B"], ["1 ikat", "daun kemangi", "S"], ["secukupnya", "garam dan gula", "B"]],
+          steps: ["Haluskan cabai, bawang merah, bawang putih, dan jahe.", "Tumis bumbu halus bersama serai dan daun jeruk sampai harum.", "Masukkan ayam, aduk sampai berubah warna.", "Tambahkan air, masak sampai ayam empuk dan kuah menyusut.", "Masukkan daun kemangi, aduk sebentar, angkat."] },
+        { id: 28, name: "Opor Ayam", min: 50, cost: 18000, spice: "Tidak pedas", mains: ["ayam"],
+          ing: [["500 g", "ayam potong", "P"], ["500 ml", "santan", "B"], ["6 butir", "bawang merah", "B"], ["4 siung", "bawang putih", "B"], ["3 butir", "kemiri", "B"], ["1 sdt", "ketumbar", "B"], ["1 ruas", "kunyit", "B"], ["2 lembar", "daun salam", "B"], ["1 batang", "serai", "B"], ["1 ruas", "lengkuas", "B"], ["secukupnya", "garam dan gula", "B"]],
+          steps: ["Haluskan bawang, kemiri, ketumbar, dan kunyit.", "Tumis bumbu halus bersama daun salam, serai, dan lengkuas sampai harum.", "Masukkan ayam, aduk sampai berubah warna.", "Tuang sebagian santan yang diencerkan, masak sampai ayam empuk.", "Tuang sisa santan kental, masak sebentar sambil diaduk agar tidak pecah, sajikan."] },
+        { id: 29, name: "Lotek", min: 25, cost: 10000, spice: "Sedang", mains: ["sayur", "tahu"],
+          ing: [["100 g", "kangkung", "S"], ["100 g", "kacang panjang", "S"], ["100 g", "tauge", "S"], ["2 buah", "tahu goreng", "P"], ["150 g", "kacang tanah goreng", "B"], ["2 buah", "cabai merah", "B"], ["1 ruas", "kencur", "B"], ["2 sdm", "gula merah", "B"], ["1 sdm", "asam jawa", "B"], ["secukupnya", "garam", "B"], ["secukupnya", "kerupuk", "B"]],
+          steps: ["Rebus sayuran bergantian sampai matang, tiriskan.", "Haluskan kacang tanah, cabai, kencur, gula merah, dan garam.", "Larutkan bumbu dengan air dan air asam jawa.", "Campur sayuran dan tahu goreng dengan bumbu di wadah besar.", "Aduk rata, sajikan dengan kerupuk."] },
+        { id: 30, name: "Ketoprak", min: 20, cost: 10000, spice: "Ringan", mains: ["tahu", "sayur"],
+          ing: [["4 buah", "tahu", "P"], ["100 g", "bihun", "B"], ["100 g", "tauge", "S"], ["1 buah", "timun", "S"], ["150 g", "kacang tanah goreng", "B"], ["2 buah", "cabai rawit", "B"], ["2 sdm", "gula merah", "B"], ["1 sdm", "kecap manis", "B"], ["1 sdm", "bawang goreng", "B"], ["secukupnya", "kerupuk", "B"]],
+          steps: ["Goreng tahu sampai matang, potong-potong.", "Seduh bihun dan tauge dengan air panas, tiriskan.", "Ulek cabai, garam, dan gula merah di piring, tambahkan kacang tanah, ulek lagi.", "Tambahkan kecap manis dan sedikit air, aduk menjadi bumbu.", "Tata bihun, tahu, tauge, dan timun di atas bumbu, aduk rata, taburi bawang goreng dan kerupuk."] },
+        { id: 31, name: "Sosis Oseng Kecap", min: 15, cost: 10000, spice: "Tidak pedas", mains: ["sosis"],
+          ing: [["6 buah", "sosis", "P"], ["1/2 buah", "bawang bombay", "S"], ["3 siung", "bawang putih", "B"], ["3 sdm", "kecap manis", "B"], ["1 sdm", "saus tomat", "B"], ["2 buah", "cabai merah", "B"], ["secukupnya", "merica", "B"]],
+          steps: ["Potong sosis menyerong, kerat-kerat permukaannya.", "Tumis bawang putih dan bawang bombay sampai harum.", "Masukkan sosis, masak sampai mekar dan agak kecokelatan.", "Tambahkan kecap manis, saus tomat, cabai iris, dan merica.", "Aduk sampai bumbu meresap, sajikan."] },
+        { id: 32, name: "Jamur Crispy", min: 20, cost: 8000, spice: "Tidak pedas", mains: ["jamur"],
+          ing: [["250 g", "jamur tiram", "S"], ["100 g", "tepung terigu", "B"], ["2 sdm", "tepung maizena", "B"], ["1 sdt", "bawang putih bubuk", "B"], ["secukupnya", "garam dan merica", "B"], ["secukupnya", "minyak goreng", "B"]],
+          steps: ["Suwir jamur tiram, cuci, peras sampai airnya keluar.", "Campur tepung terigu, maizena, bawang putih bubuk, garam, dan merica.", "Balurkan jamur ke tepung sambil diremas ringan.", "Goreng dalam minyak panas dengan api sedang sampai garing keemasan.", "Tiriskan, sajikan selagi renyah."] },
+        { id: 33, name: "Tumis Kornet Kentang", min: 15, cost: 12000, spice: "Tidak pedas", mains: ["kornet", "kentang"],
+          ing: [["1 kaleng (200 g)", "kornet sapi", "P"], ["2 buah", "kentang", "S"], ["4 butir", "bawang merah", "B"], ["2 siung", "bawang putih", "B"], ["2 buah", "cabai merah", "B"], ["1 sdm", "kecap manis", "B"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Potong kentang dadu kecil, goreng sampai matang, tiriskan.", "Tumis irisan bawang dan cabai sampai harum.", "Masukkan kornet, aduk dan masak sampai agak kering.", "Masukkan kentang goreng dan kecap manis.", "Aduk rata, koreksi rasa, sajikan."] },
+        { id: 34, name: "Sayur Lodeh", min: 35, cost: 10000, spice: "Tidak pedas", mains: ["sayur"],
+          ing: [["1 buah", "labu siam", "S"], ["100 g", "kacang panjang", "S"], ["1 buah", "terong", "S"], ["50 g", "daun melinjo", "S"], ["400 ml", "santan", "B"], ["5 butir", "bawang merah", "B"], ["3 siung", "bawang putih", "B"], ["2 lembar", "daun salam", "B"], ["1 ruas", "lengkuas", "B"], ["secukupnya", "garam dan gula", "B"]],
+          steps: ["Tumis irisan bawang bersama daun salam dan lengkuas sampai harum.", "Tuang air secukupnya, masukkan labu siam dan kacang panjang lebih dulu.", "Setelah agak empuk, masukkan terong dan daun melinjo.", "Tuang santan, bumbui garam dan gula.", "Masak sambil diaduk sampai semua sayur matang dan santan tidak pecah."] },
+        { id: 35, name: "Cah Brokoli Udang", min: 20, cost: 20000, spice: "Tidak pedas", mains: ["sayur", "udang"],
+          ing: [["200 g", "brokoli", "S"], ["150 g", "udang", "P"], ["3 siung", "bawang putih", "B"], ["1 sdm", "saus tiram", "B"], ["1 sdt", "tepung maizena", "B"], ["secukupnya", "garam dan merica", "B"]],
+          steps: ["Potong brokoli per kuntum, rendam air garam sebentar, bilas.", "Tumis bawang putih cincang sampai harum.", "Masukkan udang, masak sampai berubah warna.", "Masukkan brokoli dan sedikit air, bumbui saus tiram, garam, dan merica.", "Kentalkan dengan larutan maizena, masak sebentar sampai brokoli matang renyah."] }
+      ];
+
+      var byId = {};
+      DISHES.forEach(function (d) { byId[d.id] = d; });
+
+      var LS_ING = "masakapa.bahan";
+      var LS_PLAN = "masakapa.rencana";
+      function loadJSON(key, fallback) {
+        try {
+          var raw = localStorage.getItem(key);
+          if (!raw) return fallback;
+          var val = JSON.parse(raw);
+          return val == null ? fallback : val;
+        } catch (e) { return fallback; }
+      }
+      function saveJSON(key, val) {
+        try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+      }
+
+      var selected = {};
+      (function () {
+        var saved = loadJSON(LS_ING, []);
+        if (Array.isArray(saved)) {
+          saved.forEach(function (k) { if (ING_LABELS[k]) selected[k] = true; });
+        }
+      })();
+      var mode = "semua";
+      var query = "";
+      var openRecipes = {};
+      var pickedId = null;
+      var plan = null;
+      (function () {
+        var saved = loadJSON(LS_PLAN, null);
+        if (Array.isArray(saved) && saved.length === 7 && saved.every(function (id) { return byId[id]; })) {
+          plan = saved.slice();
+        }
+      })();
+
+      function fmtRp(n) { return "Rp" + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function selectedKeys() { return Object.keys(selected).filter(function (k) { return selected[k]; }); }
+      function missingOf(dish) {
+        return dish.mains.filter(function (m) { return !selected[m]; });
+      }
+      function metaLine(d) {
+        return "<b>" + d.min + " menit</b> &middot; <b>" + fmtRp(d.cost) + "</b> per porsi &middot; Pedas: " + esc(d.spice);
+      }
+      function recipeHTML(d) {
+        var items = d.ing.map(function (it) {
+          return "<li>" + esc(it[0]) + " " + esc(it[1]) + "</li>";
+        }).join("");
+        var steps = d.steps.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("");
+        return "<h4>Bahan-bahan</h4><ul>" + items + "</ul><h4>Cara masak</h4><ol>" + steps + "</ol>";
+      }
+
+      /* ---------- Chips ---------- */
+      var chipsEl = document.getElementById("chips");
+      var chipsNote = document.getElementById("chipsNote");
+      ING_ORDER.forEach(function (key) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = ING_LABELS[key];
+        b.setAttribute("aria-pressed", selected[key] ? "true" : "false");
+        b.addEventListener("click", function () {
+          selected[key] = !selected[key];
+          if (!selected[key]) delete selected[key];
+          b.setAttribute("aria-pressed", selected[key] ? "true" : "false");
+          saveJSON(LS_ING, selectedKeys());
+          renderList();
+          updateChipsNote();
+        });
+        chipsEl.appendChild(b);
+      });
+      function updateChipsNote() {
+        var n = selectedKeys().length;
+        chipsNote.textContent = n === 0
+          ? "Belum ada bahan dipilih — semua menu tampil."
+          : n + " bahan dipilih. Menu yang bahannya lengkap tampil paling atas.";
+      }
+
+      /* ---------- Mode + search ---------- */
+      document.getElementById("modes").addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-mode]");
+        if (!btn) return;
+        mode = btn.getAttribute("data-mode");
+        Array.prototype.forEach.call(this.querySelectorAll(".mode"), function (m) {
+          m.setAttribute("aria-pressed", m === btn ? "true" : "false");
+        });
+        renderList();
+      });
+      document.getElementById("search").addEventListener("input", function () {
+        query = this.value.trim().toLowerCase();
+        renderList();
+      });
+
+      function passesMode(d) {
+        if (mode === "cepat") return d.min <= 20;
+        if (mode === "hemat") return d.cost <= 10000;
+        if (mode === "spesial") return d.min >= 45;
+        return true;
+      }
+      function visibleDishes() {
+        var list = DISHES.filter(function (d) {
+          return passesMode(d) && (query === "" || d.name.toLowerCase().indexOf(query) !== -1);
+        });
+        if (selectedKeys().length > 0) {
+          list = list.map(function (d, i) { return { d: d, i: i, miss: missingOf(d).length }; })
+            .sort(function (a, b) { return (a.miss - b.miss) || (a.i - b.i); })
+            .map(function (x) { return x.d; });
+        }
+        return list;
+      }
+
+      /* ---------- Cards ---------- */
+      var cardsEl = document.getElementById("cards");
+      var countLine = document.getElementById("countLine");
+      var emptyState = document.getElementById("emptyState");
+
+      function cardHTML(d) {
+        var badges = "";
+        if (d.min <= 20) badges += '<span class="badge">Cepat</span>';
+        if (d.cost <= 10000) badges += '<span class="badge">Hemat</span>';
+        if (d.spice === "Pedas") badges += '<span class="badge hot">Pedas</span>';
+        if (selectedKeys().length > 0) {
+          var miss = missingOf(d);
+          if (miss.length === 0) badges += '<span class="badge good">Bahan lengkap</span>';
+          else badges += '<span class="badge warn">Kurang: ' + miss.map(function (m) { return ING_LABELS[m]; }).join(", ") + "</span>";
+        }
+        var open = !!openRecipes[d.id];
+        return '<article class="card" data-id="' + d.id + '">' +
+          "<h3>" + esc(d.name) + "</h3>" +
+          '<p class="meta">' + metaLine(d) + "</p>" +
+          (badges ? '<div class="badges">' + badges + "</div>" : "") +
+          '<button class="btn btn-ghost btn-small" type="button" data-recipe="' + d.id + '" aria-expanded="' + open + '">' + (open ? "Tutup Resep" : "Lihat Resep") + "</button>" +
+          '<div class="recipe" data-recipe-box="' + d.id + '"' + (open ? "" : " hidden") + ">" + recipeHTML(d) + "</div>" +
+          "</article>";
+      }
+      function renderList() {
+        var list = visibleDishes();
+        cardsEl.innerHTML = list.map(cardHTML).join("");
+        countLine.textContent = "Menampilkan " + list.length + " dari " + DISHES.length + " menu.";
+        emptyState.hidden = list.length !== 0;
+        cardsEl.style.display = list.length === 0 ? "none" : "";
+      }
+      cardsEl.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-recipe]");
+        if (!btn) return;
+        var id = btn.getAttribute("data-recipe");
+        openRecipes[id] = !openRecipes[id];
+        var box = cardsEl.querySelector('[data-recipe-box="' + id + '"]');
+        if (box) box.hidden = !openRecipes[id];
+        btn.textContent = openRecipes[id] ? "Tutup Resep" : "Lihat Resep";
+        btn.setAttribute("aria-expanded", openRecipes[id] ? "true" : "false");
+      });
+
+      /* ---------- Acak Menu ---------- */
+      var acakBtn = document.getElementById("acakBtn");
+      var acakName = document.getElementById("acakName");
+      var acakMeta = document.getElementById("acakMeta");
+      var acakActions = document.getElementById("acakActions");
+      var acakRecipe = document.getElementById("acakRecipe");
+      var acakTimer = null;
+      var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function showPicked(d) {
+        pickedId = d.id;
+        acakName.textContent = d.name;
+        acakName.classList.remove("idle");
+        acakMeta.innerHTML = d.min + " menit &middot; " + fmtRp(d.cost) + " per porsi &middot; Pedas: " + esc(d.spice);
+        acakActions.hidden = false;
+        acakRecipe.hidden = true;
+        if (!reduceMotion) {
+          acakName.classList.remove("pop");
+          void acakName.offsetWidth;
+          acakName.classList.add("pop");
+        }
+      }
+      function runAcak() {
+        if (acakTimer) return;
+        var pool = visibleDishes();
+        if (pool.length === 0) pool = DISHES;
+        var target = pool[Math.floor(Math.random() * pool.length)];
+        acakBtn.disabled = true;
+        acakBtn.textContent = "Lagi mikir...";
+        acakActions.hidden = true;
+        acakRecipe.hidden = true;
+        acakName.classList.remove("idle", "pop");
+        acakMeta.textContent = "";
+        if (reduceMotion) {
+          acakBtn.disabled = false;
+          acakBtn.textContent = "Acak Menu";
+          showPicked(target);
+          return;
+        }
+        var elapsed = 0;
+        var duration = 900;
+        function tick() {
+          if (elapsed >= duration) {
+            acakTimer = null;
+            acakBtn.disabled = false;
+            acakBtn.textContent = "Acak Menu";
+            showPicked(target);
+            return;
+          }
+          acakName.textContent = pool[Math.floor(Math.random() * pool.length)].name;
+          var progress = elapsed / duration;
+          var delay = 45 + progress * progress * 190;
+          elapsed += delay;
+          acakTimer = setTimeout(tick, delay);
+        }
+        tick();
+      }
+      acakBtn.addEventListener("click", runAcak);
+      document.getElementById("acakAgainBtn").addEventListener("click", runAcak);
+      document.getElementById("acakRecipeBtn").addEventListener("click", function () {
+        if (!pickedId) return;
+        if (acakRecipe.hidden) {
+          acakRecipe.innerHTML = recipeHTML(byId[pickedId]);
+          acakRecipe.hidden = false;
+          this.textContent = "Tutup Resep";
+        } else {
+          acakRecipe.hidden = true;
+          this.textContent = "Lihat Resep";
+        }
+      });
+
+      /* ---------- Rencana Seminggu ---------- */
+      function shuffled(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+      }
+      function generatePlan() {
+        for (var attempt = 0; attempt < 300; attempt++) {
+          var pool = shuffled(DISHES);
+          var picked = [];
+          var counts = {};
+          var fast = 0;
+          for (var i = 0; i < pool.length && picked.length < 7; i++) {
+            var d = pool[i];
+            var ok = true;
+            for (var k = 0; k < d.mains.length; k++) {
+              if ((counts[d.mains[k]] || 0) >= 2) { ok = false; break; }
+            }
+            if (!ok) continue;
+            var remaining = 7 - picked.length - 1;
+            var isFast = d.min <= 20;
+            /* pastikan minimal 2 menu cepat tetap bisa tercapai */
+            if (!isFast && fast + remaining < 2) continue;
+            picked.push(d);
+            d.mains.forEach(function (m) { counts[m] = (counts[m] || 0) + 1; });
+            if (isFast) fast++;
+          }
+          if (picked.length === 7 && fast >= 2) {
+            return picked.map(function (d) { return d.id; });
+          }
+        }
+        return DISHES.slice(0, 7).map(function (d) { return d.id; });
+      }
+      function shoppingGroups(ids) {
+        var groups = { P: [], S: [], B: [] };
+        var seen = {};
+        ids.forEach(function (id) {
+          byId[id].ing.forEach(function (it) {
+            var key = it[1].toLowerCase();
+            if (seen[key]) return;
+            seen[key] = true;
+            groups[it[2]].push(it[1]);
+          });
+        });
+        return groups;
+      }
+      function planText(ids) {
+        var lines = ["Rencana Masak Seminggu — MasakApa", ""];
+        ids.forEach(function (id, i) { lines.push(DAYS[i] + ": " + byId[id].name); });
+        lines.push("", "Daftar Belanja:");
+        var g = shoppingGroups(ids);
+        ["P", "S", "B"].forEach(function (cat) {
+          if (!g[cat].length) return;
+          lines.push("", CATS[cat] + ":");
+          g[cat].forEach(function (n) { lines.push("- " + n); });
+        });
+        return lines.join("\n");
+      }
+      var planEmpty = document.getElementById("planEmpty");
+      var planView = document.getElementById("planView");
+      var planDays = document.getElementById("planDays");
+      var planShop = document.getElementById("planShop");
+      var copyNote = document.getElementById("copyNote");
+
+      function renderPlan() {
+        if (!plan) {
+          planEmpty.hidden = false;
+          planView.hidden = true;
+          return;
+        }
+        planEmpty.hidden = true;
+        planView.hidden = false;
+        planDays.innerHTML = plan.map(function (id, i) {
+          var d = byId[id];
+          return '<div class="plan-day"><span class="day">' + DAYS[i] + '</span>' +
+            '<span class="dish"><button type="button" data-plan-recipe="' + id + '">' + esc(d.name) + "</button>" +
+            '<span class="mins">' + d.min + " menit &middot; " + fmtRp(d.cost) + " per porsi</span></span></div>" +
+            '<div class="recipe" data-plan-box="' + id + '" hidden>' + recipeHTML(d) + "</div>";
+        }).join("");
+        var g = shoppingGroups(plan);
+        planShop.innerHTML = ["P", "S", "B"].map(function (cat) {
+          if (!g[cat].length) return "";
+          return "<h3>" + CATS[cat] + "</h3><ul>" + g[cat].map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>";
+        }).join("");
+      }
+      planDays.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-plan-recipe]");
+        if (!btn) return;
+        var box = planDays.querySelector('[data-plan-box="' + btn.getAttribute("data-plan-recipe") + '"]');
+        if (box) box.hidden = !box.hidden;
+      });
+      function setNewPlan() {
+        plan = generatePlan();
+        saveJSON(LS_PLAN, plan);
+        copyNote.textContent = "";
+        renderPlan();
+      }
+      document.getElementById("makePlanBtn").addEventListener("click", setNewPlan);
+      document.getElementById("replanBtn").addEventListener("click", setNewPlan);
+      document.getElementById("clearPlanBtn").addEventListener("click", function () {
+        plan = null;
+        try { localStorage.removeItem(LS_PLAN); } catch (e) {}
+        copyNote.textContent = "";
+        renderPlan();
+      });
+      document.getElementById("copyBtn").addEventListener("click", function () {
+        if (!plan) return;
+        var text = planText(plan);
+        function done() { copyNote.textContent = "Daftar tersalin. Tinggal tempel di catatan atau kirim ke WhatsApp."; }
+        function fallback() {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand("copy"); done(); }
+          catch (e) { copyNote.textContent = "Gagal menyalin otomatis. Daftar belanjanya ada di layar, bisa disalin manual."; }
+          document.body.removeChild(ta);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+          fallback();
+        }
+      });
+
+      /* ---------- Init ---------- */
+      updateChipsNote();
+      renderList();
+      renderPlan();
+    </script>
+  </body>
+</html>
